@@ -12,11 +12,10 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -121,11 +120,11 @@ public class CalculateService {
         return resultList;
     }
 
-    public void calculateMulti2(List<GroupDefinition> groupDefinitionList) {
+    public long calculateMulti2(List<GroupDefinition> groupDefinitionList) {
 //        log.info(Thread.currentThread().getName() + " multi - size [{}]", groupDefinitionList.size());
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        List<CompletableFuture<CalculateResultDefinition>> futureList = new ArrayList<>();
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        List<CompletableFuture<CalculateResultDefinition>> futureList = new ArrayList<>();
         for (GroupDefinition group : groupDefinitionList) {
             CompletableFuture<CalculateResultDefinition> future = CompletableFuture.supplyAsync(() -> {
                 CalculateResultDefinition result = new CalculateResultDefinition();
@@ -140,42 +139,61 @@ public class CalculateService {
                         .doubleValue();
                 result.setCalResult(
                         Arrays.asList(new IndexResultDefinition("now_price", "num", Double.toString(price))));
-                monitorTask.add(group.getKey());
+//                monitorTask.add(group.getKey());
                 return result;
             }, calculateThreadPool);
-//            futureList.add(future);
+            futureList.add(future);
         }
-//        CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
-//        log.info(Thread.currentThread().getName() + " multi - cal time [{}]", stopWatch.getTime(TimeUnit.MILLISECONDS));
+        CompletableFuture<Void> all = CompletableFuture.allOf(futureList.toArray(new CompletableFuture[futureList.size()]));
+
+        long result;
+        all.join();
+        result = stopWatch.getTime(TimeUnit.MILLISECONDS);
+        log.info(Thread.currentThread().getName() + " multi size [{}] - cal time [{}]", groupDefinitionList.size(), result);
+
+        return result;
     }
 
-    public void calculateMulti(List<GroupDefinition> groupDefinitionList) {
+    void calculate(GroupDefinition group) {
+        CalculateResultDefinition result = new CalculateResultDefinition();
+        result.setKey(group.getKey());
+        double total = group.getCodelist().stream()
+                .mapToDouble(t -> metaHqData.getHqSnapshot()
+                        .get(t.getMarket() + ":" + t.getCode())
+                        .getQuote().get("10")).sum();
+        BigDecimal.valueOf(total)
+                .divide(BigDecimal.valueOf(group.getCodelist().size()), 2, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    public long calculateMulti(List<GroupDefinition> groupDefinitionList) {
         log.info(Thread.currentThread().getName() + " multi - size [{}]", groupDefinitionList.size());
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
 
+        CountDownLatch countDownLatch = new CountDownLatch(groupDefinitionList.size());
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+        long startTime = System.currentTimeMillis();
         for (GroupDefinition group : groupDefinitionList) {
-            calculateThreadPool.execute(() -> {
-                CalculateResultDefinition result = new CalculateResultDefinition();
-                result.setKey(group.getKey());
-                double total = group.getCodelist().stream()
-                        .mapToDouble(t -> metaHqData.getHqSnapshot()
-                                .get(t.getMarket() + ":" + t.getCode())
-                                .getQuote().get("10"))
-                        .sum();
-                double price = BigDecimal.valueOf(total)
-                        .divide(BigDecimal.valueOf(group.getCodelist().size()), 2, RoundingMode.HALF_UP)
-                        .doubleValue();
-//                result.setCalResult(
-//                        Arrays.asList(new IndexResultDefinition("now_price", "num", Double.toString(price))));
-//                return result;
 
-                monitorTask.add(group.getKey());
+            calculateThreadPool.submit(() -> {
+                calculate(group);
+                countDownLatch.countDown();
             });
         }
 
-        log.info(Thread.currentThread().getName() + " multi - cal time [{}]", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
+        try {
+            countDownLatch.await();
+
+//            stopWatch.stop();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        long result = System.currentTimeMillis() - startTime;
+//        long result = stopWatch.getTime();
+        log.info(Thread.currentThread().getName() + " multi size [{}] - cal time [{}]", groupDefinitionList.size(), result);
+
+        return result;
     }
 
     public void submitTask(GroupDefinition group) {

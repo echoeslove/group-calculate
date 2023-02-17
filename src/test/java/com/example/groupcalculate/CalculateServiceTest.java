@@ -97,7 +97,6 @@ class CalculateServiceTest {
 
     @Test
     void calculateMulti() throws InterruptedException {
-        TimeUnit.SECONDS.sleep(10);
         List<GroupDefinition> groupDefinitionList = new ArrayList<>();
         for (int i = 0; i < 500_000; i++) {
             List<CodeListDefinition> codeList = new ArrayList<>();
@@ -113,23 +112,18 @@ class CalculateServiceTest {
             groupDefinitionList.add(group);
         }
 
-        calculateService.calculateMulti(groupDefinitionList.subList(0, 100));
+//        calculateService.calculateMulti(groupDefinitionList.subList(0, 100));
 
-        TimeUnit.SECONDS.sleep(10);
+//        TimeUnit.SECONDS.sleep(10);
 
         calculateService.calculateMulti(groupDefinitionList);
-//        for (int a = 0; a < 10; a++) {
-//            calculateService.calculateMulti(groupDefinitionList);
-//        }
-        while (true) {
-        }
     }
 
     @Test
     public void testMulti() throws InterruptedException {
-        TimeUnit.SECONDS.sleep(10);
+//        TimeUnit.SECONDS.sleep(10);
         List<GroupDefinition> groupDefinitionList = new ArrayList<>();
-        for (int i = 0; i < 1000_000; i++) {
+        for (int i = 0; i < 100_000; i++) {
             List<CodeListDefinition> codeList = new ArrayList<>();
             for (int j = 0; j < MetaHqData.CODE_LIST.size(); j++) {
                 CodeListDefinition codeListDefinition = new CodeListDefinition();

@@ -1,5 +1,6 @@
 package com.example.groupcalculate;
 
+import org.apache.lucene.util.NamedThreadFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,9 +14,10 @@ public class MetaCalculateThreadPoolConfig {
 
     @Bean
     public ExecutorService calculateThreadPool() {
-        return new ThreadPoolExecutor(5, 5, 0L,
+        return new ThreadPoolExecutor(4, 4, 0L,
                 TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
+                new NamedThreadFactory("calculateThreedPool"),
                 new ThreadPoolExecutor.AbortPolicy());
     }
 }

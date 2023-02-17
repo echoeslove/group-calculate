@@ -32,7 +32,7 @@ public class MonitorTask {
     }
 
 
-    @Scheduled(fixedDelay = 1000L)
+//    @Scheduled(fixedDelay = 1000L)
     public void print() throws InterruptedException {
 //        Map<Long, Long> resultMap = map.asMap().entrySet().stream().collect(Collectors.groupingBy(Map.Entry::getValue, Collectors.counting()));
 
