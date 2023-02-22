@@ -19,6 +19,6 @@ public class RealTimeController {
 
     @PostMapping("/cal")
     public List<CalculateResultDefinition> calculate(@RequestBody GroupDefinition definition) {
-        return calculateService.calculate(Arrays.asList(definition));
+        return calculateService.calculateSingle(definition);
     }
 }

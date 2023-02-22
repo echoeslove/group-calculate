@@ -11,9 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @SpringBootTest
 class CalculateServiceTest {
@@ -41,11 +43,9 @@ class CalculateServiceTest {
 
     @Test
     void calculate() throws InterruptedException {
-        TimeUnit.SECONDS.sleep(10);
         List<GroupDefinition> groupDefinitionList = new ArrayList<>();
-        for (int i = 0; i < 1_000_000; i++) {
+        for (int i = 0; i < 500_000; i++) {
             List<CodeListDefinition> codeList = new ArrayList<>();
-//            int s = RandomUtils.nextInt(80, MetaHqData.CODE_LIST.size());
             for (int j = 0; j < MetaHqData.CODE_LIST.size(); j++) {
                 CodeListDefinition codeListDefinition = new CodeListDefinition();
                 codeListDefinition.setMarket("33");
@@ -57,42 +57,20 @@ class CalculateServiceTest {
             group.setCodelist(codeList);
             groupDefinitionList.add(group);
         }
+        TimeUnit.SECONDS.sleep(2);
 
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-        calculateService.calculate(groupDefinitionList);
-        while (true) {
-        }
-
-//        System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
-
-//        assertEquals(resultList.size(), groupDefinitionList.size());
-    }
-
-    @Test
-    void testCalculatePre() {
-        List<GroupDefinition> groupDefinitionList = new ArrayList<>();
-        for (int i = 0; i < 10000; i++) {
-            List<CodeListDefinition> codeList = new ArrayList<>();
-            int s = 50;
-            for (int j = 0; j < s; j++) {
-                CodeListDefinition codeListDefinition = new CodeListDefinition();
-                codeListDefinition.setMarket("33");
-                codeListDefinition.setCode(MetaHqData.CODE_LIST.get(j));
-                codeList.add(codeListDefinition);
-            }
-            GroupDefinition group = new GroupDefinition();
-            group.setKey("key" + i);
-            group.setCodelist(codeList);
-            groupDefinitionList.add(group);
-        }
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        for (GroupDefinition groupDefinition : groupDefinitionList) {
-            calculateService.calculatePre(groupDefinition);
+        long[] res = new long[10];
+        for (int i = 0; i < 10; i++) {
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+            calculateService.calculate(groupDefinitionList);
             System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
+            res[i]= stopWatch.getTime(TimeUnit.MILLISECONDS);
         }
+
+        Arrays.sort(res);
+        System.out.println(res[8]);
+        System.out.println(Arrays.stream(res).average().orElse(Double.NaN));
     }
 
     @Test
@@ -112,11 +90,10 @@ class CalculateServiceTest {
             groupDefinitionList.add(group);
         }
 
-//        calculateService.calculateMulti(groupDefinitionList.subList(0, 100));
-
-//        TimeUnit.SECONDS.sleep(10);
-
-        calculateService.calculateMulti(groupDefinitionList);
+        TimeUnit.SECONDS.sleep(10);
+        for (int i = 0; i < 10; i++) {
+            calculateService.calculateMulti(groupDefinitionList);
+        }
     }
 
     @Test
@@ -140,7 +117,7 @@ class CalculateServiceTest {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
 //        for (int i = 0; i < 10; i++) {
-            calculateService.calculateMulti2(groupDefinitionList);
+        calculateService.calculateMulti2(groupDefinitionList);
 //        }
         System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
     }

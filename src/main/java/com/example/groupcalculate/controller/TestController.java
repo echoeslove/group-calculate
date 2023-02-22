@@ -45,4 +45,26 @@ public class TestController {
 
         return ResponseEntity.ok(String.valueOf(result));
     }
+
+    @GetMapping("/test2")
+    public ResponseEntity<String> test2(@RequestParam("size") Integer size) {
+        List<GroupDefinition> groupDefinitionList = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            List<CodeListDefinition> codeList = new ArrayList<>();
+            for (int j = 0; j < MetaHqData.CODE_LIST.size(); j++) {
+                CodeListDefinition codeListDefinition = new CodeListDefinition();
+                codeListDefinition.setMarket("33");
+                codeListDefinition.setCode(MetaHqData.CODE_LIST.get(j));
+                codeList.add(codeListDefinition);
+            }
+            GroupDefinition group = new GroupDefinition();
+            group.setKey("key" + i);
+            group.setCodelist(codeList);
+            groupDefinitionList.add(group);
+        }
+
+        long result = calculateService.calculateMulti10(groupDefinitionList);
+
+        return ResponseEntity.ok(String.valueOf(result));
+    }
 }

@@ -27,6 +27,10 @@ public class InitHqSnapshot implements InitializingBean {
         for (String code : MetaHqData.CODE_LIST) {
             Map<String, Double> quote = new HashMap<>();
             quote.put("10", RandomUtils.nextDouble(0, 100000));
+            quote.put("11", RandomUtils.nextDouble(0, 100000));
+            quote.put("12", RandomUtils.nextDouble(0, 100000));
+            quote.put("13", RandomUtils.nextDouble(0, 100000));
+            quote.put("14", RandomUtils.nextDouble(0, 100000));
             ItemDefinition itemDefinition = new ItemDefinition("33:" + code, quote, timestamp);
             metaHqData.getHqSnapshot().put(itemDefinition.getKey(), itemDefinition);
         }
