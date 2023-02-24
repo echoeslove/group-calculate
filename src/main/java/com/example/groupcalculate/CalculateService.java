@@ -1,24 +1,22 @@
 package com.example.groupcalculate;
 
-import com.example.groupcalculate.definition.*;
+import com.example.groupcalculate.definition.CalculateResultDefinition;
+import com.example.groupcalculate.definition.CodeListDefinition;
+import com.example.groupcalculate.definition.GroupDefinition;
+import com.example.groupcalculate.definition.IndexResultDefinition;
 import com.example.groupcalculate.task.MonitorTask;
 import lombok.extern.slf4j.Slf4j;
-import org.HdrHistogram.Histogram;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.*;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
+import java.util.concurrent.*;
 
 @Service
 @Slf4j
@@ -34,6 +32,9 @@ public class CalculateService {
     private HqService hqService;
     @Autowired
     private MonitorTask monitorTask;
+
+    @Autowired
+    private MetaCalculateThreadPoolConfig config;
 
     public List<CalculateResultDefinition> calculateSingle(GroupDefinition group) {
         List<CalculateResultDefinition> resultList = new ArrayList<>();
@@ -86,7 +87,6 @@ public class CalculateService {
     }
 
     public long calculateMulti2(List<GroupDefinition> groupDefinitionList) {
-//        log.info(Thread.currentThread().getName() + " multi - size [{}]", groupDefinitionList.size());
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         List<CompletableFuture<CalculateResultDefinition>> futureList = new ArrayList<>();
@@ -104,7 +104,6 @@ public class CalculateService {
                         .doubleValue();
                 result.setCalResult(
                         Arrays.asList(new IndexResultDefinition("now_price", "num", Double.toString(price))));
-//                monitorTask.add(group.getKey());
                 return result;
             }, calculateThreadPool);
             futureList.add(future);
@@ -119,7 +118,7 @@ public class CalculateService {
         return result;
     }
 
-    void calculate(GroupDefinition group) {
+    double calculate(GroupDefinition group) {
         CalculateResultDefinition result = new CalculateResultDefinition();
         result.setKey(group.getKey());
 
@@ -129,10 +128,7 @@ public class CalculateService {
                     .get(t.getMarket() + ":" + t.getCode()).getQuote();
             res += quote.get("11") / quote.get("12");
         }
-
-//        group.getCodelist().stream().mapToDouble(t -> BigDecimal.valueOf(metaHqData.getHqSnapshot()
-//                .get(t.getMarket() + ":" + t.getCode()).getQuote().get("11")).divide(BigDecimal.valueOf(metaHqData.getHqSnapshot()
-//                .get(t.getMarket() + ":" + t.getCode()).getQuote().get("12")), 2, RoundingMode.HALF_UP).doubleValue()).sum();
+        return res;
     }
 
     public long calculateMulti(List<GroupDefinition> groupDefinitionList) {
@@ -164,26 +160,22 @@ public class CalculateService {
 
     public long calculateMulti10(List<GroupDefinition> groupDefinitionList) {
         log.info(Thread.currentThread().getName() + " multi - size [{}]", groupDefinitionList.size());
-        CountDownLatch countDownLatch = new CountDownLatch(groupDefinitionList.size());
+        CountDownLatch countDownLatch = new CountDownLatch(config.getCorePoolSize());
 
         long startTime = System.currentTimeMillis();
 
-
-        int split = 5;
-        for (int i = 0; i < groupDefinitionList.size(); i = i + split) {
-
-            int finalI = i;
+        for (int i = 0; i < config.getCorePoolSize(); i++) {
+            final int finalI = i;
             calculateThreadPool.submit(() -> {
-                for (int j = 0; j < split; j++) {
-                    calculate(groupDefinitionList.get(finalI));
-                    countDownLatch.countDown();
+                for (int j = finalI; j < groupDefinitionList.size(); j += config.getCorePoolSize()) {
+                    calculate(groupDefinitionList.get(j));
                 }
+                countDownLatch.countDown();
             });
         }
 
         log.info(Thread.currentThread().getName() + " multi size [{}] - submiit time [{}]", groupDefinitionList.size(),
                 System.currentTimeMillis() - startTime);
-
 
         try {
             countDownLatch.await();
@@ -213,23 +205,6 @@ public class CalculateService {
 //                return result;
             monitorTask.add(group.getKey());
         });
-    }
-
-    //    @Scheduled(fixedDelay = 1000)
-    public void monitor() {
-        ThreadPoolExecutor tpe = (ThreadPoolExecutor) calculateThreadPool;
-        int queueSize = tpe.getQueue().size();
-        log.info("当前排队线程数：" + queueSize);
-
-        int activeCount = tpe.getActiveCount();
-        log.info("当前活动线程数：" + activeCount);
-
-        long completedTaskCount = tpe.getCompletedTaskCount();
-        log.info("执行完成线程数：" + completedTaskCount);
-
-        long taskCount = tpe.getTaskCount();
-        log.info("总线程数：" + taskCount);
-
     }
 
 }

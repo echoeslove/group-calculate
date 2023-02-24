@@ -23,28 +23,19 @@ class CalculateServiceTest {
     @Autowired
     private CalculateService calculateService;
 
-    @Test
-    void testJson() throws JsonProcessingException {
-        List<CodeListDefinition> codeList = new ArrayList<>();
-//            int s = RandomUtils.nextInt(80, MetaHqData.CODE_LIST.size());
-        for (int j = 0; j < MetaHqData.CODE_LIST.size(); j++) {
-            CodeListDefinition codeListDefinition = new CodeListDefinition();
-            codeListDefinition.setMarket("33");
-            codeListDefinition.setCode(MetaHqData.CODE_LIST.get(j));
-            codeList.add(codeListDefinition);
-        }
-        GroupDefinition group = new GroupDefinition();
-        group.setKey("key");
-        group.setCodelist(codeList);
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        System.out.println(objectMapper.writeValueAsString(group));
+    private void log(long[] res) {
+        Arrays.sort(res);
+        System.out.println(("50, " + res[(int) Math.round(res.length * 0.5) - 1]));
+        System.out.println(("80, " + res[(int) Math.round(res.length * 0.8) - 1]));
+        System.out.println(("90, " + res[(int) Math.round(res.length * 0.9) - 1]));
+        System.out.println(("avg: " + Arrays.stream(res).average().orElse(Double.NaN)));
     }
 
     @Test
     void calculate() throws InterruptedException {
         List<GroupDefinition> groupDefinitionList = new ArrayList<>();
-        for (int i = 0; i < 500_000; i++) {
+        for (int i = 0; i < 250_000; i++) {
             List<CodeListDefinition> codeList = new ArrayList<>();
             for (int j = 0; j < MetaHqData.CODE_LIST.size(); j++) {
                 CodeListDefinition codeListDefinition = new CodeListDefinition();
@@ -57,20 +48,15 @@ class CalculateServiceTest {
             group.setCodelist(codeList);
             groupDefinitionList.add(group);
         }
-        TimeUnit.SECONDS.sleep(2);
 
         long[] res = new long[10];
         for (int i = 0; i < 10; i++) {
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
+            long start = System.currentTimeMillis();
             calculateService.calculate(groupDefinitionList);
-            System.out.println(stopWatch.getTime(TimeUnit.MILLISECONDS));
-            res[i]= stopWatch.getTime(TimeUnit.MILLISECONDS);
+            res[i] = System.currentTimeMillis() - start;
         }
 
-        Arrays.sort(res);
-        System.out.println(res[8]);
-        System.out.println(Arrays.stream(res).average().orElse(Double.NaN));
+        log(res);
     }
 
     @Test

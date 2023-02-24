@@ -2,6 +2,7 @@ package com.example.groupcalculate.init;
 
 import com.example.groupcalculate.MetaHqData;
 import com.example.groupcalculate.definition.ItemDefinition;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.InitializingBean;
@@ -36,5 +37,8 @@ public class InitHqSnapshot implements InitializingBean {
         }
 
         log.info("init finish");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        log.info(objectMapper.writeValueAsString(metaHqData.getHqSnapshot()));
     }
 }

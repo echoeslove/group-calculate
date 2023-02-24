@@ -1,5 +1,6 @@
 package com.example.groupcalculate;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 @Configuration
 @Slf4j
+@Data
 public class MetaCalculateThreadPoolConfig {
 
     @Value("${thread.corepoolsize}")
